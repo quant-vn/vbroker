@@ -1,0 +1,26 @@
+""" Constant for SSI datafeed """
+API_URL = "https://fc-tradeapi.ssi.com.vn"
+API_PAPER_URL = "https://fc-paperapi.ssi.com.vn"
+ENDPOINT_OTP = "api/v2/Trading/GetOTP"
+ENDPOINT_AUTH = "api/v2/Trading/AccessToken"
+
+ENDPOINT_EQUITY_NEW_ORDER = "api/v2/Trading/NewOrder"
+ENDPOINT_EQUITY_MODIFY_ORDER = "api/v2/Trading/ModifyOrder"
+ENDPOINT_EQUITY_CANCEL_ORDER = "api/v2/Trading/CancelOrder"
+ENDPOINT_EQUITY_POSITION = "api/v2/Trading/stockPosition"
+ENDPOINT_EQUITY_ACCOUNT_BALANCE = "api/v2/Trading/cashAcctBal"
+
+ENDPOINT_DERIVATIVE_NEW_ORDER = "api/v2/Trading/derNewOrder"
+ENDPOINT_DERIVATIVE_MODIFY_ORDER = "api/v2/Trading/derModifyOrder"
+ENDPOINT_DERIVATIVE_CANCEL_ORDER = "api/v2/Trading/derCancelOrder"
+ENDPOINT_DERIVATIVE_POSITION = "api/v2/Trading/derivPosition"
+ENDPOINT_DERIVATIVE_ACCOUNT_BALANCE = "api/v2/Trading/derivAcctBal"
+
+ENDPOINT_ORDER_HISTORY = "api/v2/Trading/orderHistory"
+ENDPOINT_ORDERBOOK = "api/v2/Trading/orderBook"
+ENDPOINT_MAX_BUY_QUANTITY = "api/v2/Trading/maxBuyQty"
+ENDPOINT_MAX_SELl_QUANTITY = "api/v2/Trading/maxSellQty"
+
+HUB_URL = "wss://fc-tradehub.ssi.com.vn//v2.0/signalr"
+HUB_PAPER_URL = "wss://fc-paperhub.ssi.com.vn//v2.0/signalr"
+HUB = "BroadcastHubV2"
