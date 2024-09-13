@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "vbroker"
+version = "0.1.0"
+license = "MIT"
+description = "vBroker: A Python wrapper for Viet Nam Broker API"
+repository = "https://github.com/quant-vn/vbroker"
+homepage = "https://quant.vn"
+authors = ["thync <thync@outlook.com>"]
+readme = ["README.md", "LICENSE"]
+classifiers = [
+    "Typing :: Typed",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Operating System :: POSIX",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Topic :: Software Development :: Libraries :: Python Modules"
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.32.3"
+websockets = "^13.0.1"
+pydantic = "^2.9.1"
+pyjwt = "^2.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
