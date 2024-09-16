@@ -19,7 +19,7 @@ ENDPOINT_DERIVATIVE_ACCOUNT_BALANCE = "api/v2/Trading/derivAcctBal"
 ENDPOINT_ORDER_HISTORY = "api/v2/Trading/orderHistory"
 ENDPOINT_ORDERBOOK = "api/v2/Trading/orderBook"
 ENDPOINT_MAX_BUY_QUANTITY = "api/v2/Trading/maxBuyQty"
-ENDPOINT_MAX_SELl_QUANTITY = "api/v2/Trading/maxSellQty"
+ENDPOINT_MAX_SELL_QUANTITY = "api/v2/Trading/maxSellQty"
 
 HUB_URL = "wss://fc-tradehub.ssi.com.vn//v2.0/signalr"
 HUB_PAPER_URL = "wss://fc-paperhub.ssi.com.vn//v2.0/signalr"
