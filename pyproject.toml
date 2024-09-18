@@ -29,7 +29,7 @@ websockets = "^13.0.1"
 pydantic = "^2.9.1"
 pyjwt = "^2.9.0"
 pycryptodome = "^3.20.0"
-xmljson = "^^0.2.1"
+xmljson = "^0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
