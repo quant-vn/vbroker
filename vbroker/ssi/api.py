@@ -57,8 +57,7 @@ class SSIBrokerAPI(IBrokerAPI):
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        # self.__token: str = None
-        self.__token: str = "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.ewogICJhdWQiOiAiOTg5OGIxNzkzMjgwNDc0MWE3ZTc3NWI4OTY1ZGQxNzMiLAogICJpYXQiOiAxNzI2NjMxMTgwLAogICJleHAiOiAxNzI2NjU5OTgwLAogICJzY29wZSI6IHsKICAgICJJcCI6IHsKICAgICAgIklwQWRyZXNzIjogIiIsCiAgICAgICJJc1ZhbGlkIjogdHJ1ZQogICAgfSwKICAgICJUYXJnZXQiOiBbCiAgICAgIHsKICAgICAgICAiVGFyZ2V0SWQiOiAiYzRjNWRjNzM2MTc4NGY1NGE2YzEwZmRhMmNlYzMxMjgiLAogICAgICAgICJUYXJnZXRVcmwiOiAiaHR0cDovLzE5Mi4xNjguMjEzLjk4OjExODgvIiwKICAgICAgICAiQ29ubmVjdGlvbk5hbWUiOiAiRkNUcmFkaW5nIgogICAgICB9LAogICAgICB7CiAgICAgICAgIlRhcmdldElkIjogImI5Njg4YTczMmE2ZDQ1Y2Y4Y2I4MTM2NmRlMTNiZWViIiwKICAgICAgICAiVGFyZ2V0VXJsIjogImh0dHA6Ly8xOTIuMTY4LjIxMy45ODoxMTg4LyIsCiAgICAgICAgIkNvbm5lY3Rpb25OYW1lIjogIkZDRGF0YSIKICAgICAgfQogICAgXQogIH0sCiAgImNsaSI6ICJVc2VyQXBwNjY2NjY2IiwKICAic3ViIjogIjY2NjY2NiIKfQ.s6H5CoHJ0AHNB7ByO0gS8L7k6Z039NruW7H-Ei38vzJ5hGkV9i66pWodS5Mk3qXMR4dtviwomYBUDnl4FzrBTW0EnqZpLv_DCmVPVi2yVOWr0gDbhhvhiufiZE6zGZ87mhLNV5eCLSEHJqfMBEdGUuPUOREXqixqb3Seb1dBLDI"  # noqa
+        self.__token: str = None
         self.wait: int = 1  # wait 1 second before sending request
 
     def get_otp(self) -> str:
