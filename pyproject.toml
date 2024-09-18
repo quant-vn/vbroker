@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vbroker"
-version = "0.1.0"
+version = "0.1.1"
 license = "MIT"
 description = "vBroker: A Python wrapper for Viet Nam Broker API"
 repository = "https://github.com/quant-vn/vbroker"
@@ -28,7 +28,8 @@ requests = "^2.32.3"
 websockets = "^13.0.1"
 pydantic = "^2.9.1"
 pyjwt = "^2.9.0"
-
+pycryptodome = "^3.20.0"
+xmljson = "^^0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
