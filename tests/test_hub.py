@@ -11,6 +11,7 @@ broker = Broker(
     )
 )
 
+broker.api.otp = "123456"
 print(broker.api.get_token())
 
 def on_message(msg):
