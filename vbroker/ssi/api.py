@@ -239,12 +239,12 @@ class SSIBrokerAPI(IBrokerAPI):
         data: dict = {}
         data.update(
             account=account_no,
-            requestID="4",
+            requestID="25",
             instrumentID=instrument,
             market="VN",
             buySell='B' if side == 'BUY' else 'S',
-            orderType="MP",
-            price=0,
+            orderType="LO",
+            price=3300,
             quantity=quantity,
             stopOrder=False,
             stopPrice=0.0,
@@ -264,6 +264,60 @@ class SSIBrokerAPI(IBrokerAPI):
         })
         res = request_handler.post(
             url=self.url_equity_new_order, headers=self.__headers, data=data, limit=self.wait
+        )
+        return res
+
+    def modify_equity_order(
+        self, account_no: str, order_id: str,
+        side: str, instrument: str, quantity: int, price: float
+    ) -> dict:
+        data: dict = {}
+        data.update(
+            account=account_no,
+            requestID="MODIFY1",
+            orderID=order_id,
+            marketID="VN",
+            instrumentID=instrument,
+            price=300,
+            quantity=quantity,
+            buySell='B' if side == 'BUY' else 'S',
+            orderType="LO",
+            code="",
+            deviceId=":".join([str(i) for i in range(11, 17)]),
+            userAgent=""
+        )
+        data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
+        self.__headers.update({
+            "Authorization": self.get_token(),
+            "X-Signature": data_signed,
+        })
+        res = request_handler.post(
+            url=self.url_equity_modify_order, headers=self.__headers, data=data, limit=self.wait
+        )
+        return res
+
+    def cancel_equity_order(
+        self, account_no: str, order_id: str, instrument: str, side: str
+    ) -> dict:
+        data: dict = {}
+        data.update(
+            account=account_no,
+            requestID="CANCEL1",
+            orderID=order_id,
+            marketID="VN",
+            instrumentID=instrument,
+            buySell='B' if side == 'BUY' else 'S',
+            code="",
+            deviceId=":".join([str(i) for i in range(11, 17)]),
+            userAgent=""
+        )
+        data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
+        self.__headers.update({
+            "Authorization": self.get_token(),
+            "X-Signature": data_signed,
+        })
+        res = request_handler.post(
+            url=self.url_equity_cancel_order, headers=self.__headers, data=data, limit=self.wait
         )
         return res
 
@@ -317,7 +371,7 @@ class SSIBrokerAPI(IBrokerAPI):
         data: dict = {}
         data.update(
             account=account_no,
-            requestID="5",
+            requestID="26",
             instrumentID=instrument,
             market="VNFE",
             buySell='B' if side == 'BUY' else 'S',
@@ -342,5 +396,59 @@ class SSIBrokerAPI(IBrokerAPI):
         })
         res = request_handler.post(
             url=self.url_derivative_new_order, headers=self.__headers, data=data, limit=self.wait
+        )
+        return res
+
+    def modify_derivative_order(
+        self, account_no: str, order_id: str,
+        side: str, instrument: str, quantity: int, price: float
+    ) -> dict:
+        data: dict = {}
+        data.update(
+            account=account_no,
+            requestID="MODIFY2",
+            orderID=order_id,
+            marketID="VNFE",
+            instrumentID=instrument,
+            price=0,
+            quantity=quantity,
+            buySell='B' if side == 'BUY' else 'S',
+            orderType="MTL",
+            code="",
+            deviceId=":".join([str(i) for i in range(11, 17)]),
+            userAgent=""
+        )
+        data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
+        self.__headers.update({
+            "Authorization": self.get_token(),
+            "X-Signature": data_signed,
+        })
+        res = request_handler.post(
+            url=self.url_derivative_modify_order, headers=self.__headers, data=data, limit=self.wait
+        )
+        return res
+
+    def cancel_derivative_order(
+        self, account_no: str, order_id: str, instrument: str, side: str
+    ) -> dict:
+        data: dict = {}
+        data.update(
+            account=account_no,
+            requestID="CANCEL2",
+            orderID=order_id,
+            marketID="VNFE",
+            instrumentID=instrument,
+            buySell='B' if side == 'BUY' else 'S',
+            code="",
+            deviceId=":".join([str(i) for i in range(11, 17)]),
+            userAgent=""
+        )
+        data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
+        self.__headers.update({
+            "Authorization": self.get_token(),
+            "X-Signature": data_signed,
+        })
+        res = request_handler.post(
+            url=self.url_derivative_cancel_order, headers=self.__headers, data=data, limit=self.wait
         )
         return res

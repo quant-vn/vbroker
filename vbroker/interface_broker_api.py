@@ -55,6 +55,19 @@ class IBrokerAPI(ABC):
     ) -> dict:
         return NotImplemented
 
+    @abstractmethod
+    def modify_equity_order(
+        self, account_no: str, order_id: str,
+        side: str, instrument: str, quantity: int, price: float
+    ) -> dict:
+        return NotImplemented
+
+    @abstractmethod
+    def cancel_equity_order(
+        self, account_no: str, order_id: str, nstrument: str, side: str
+    ) -> dict:
+        return NotImplemented
+
     # DERIVATIVES
     @abstractmethod
     def get_derivative_positions(self, account_no: str) -> dict:
@@ -67,5 +80,18 @@ class IBrokerAPI(ABC):
     @abstractmethod
     def place_derivative_order(
         self, account_no: str, side: str, instrument: str, quantity: int, price: float
+    ) -> dict:
+        return NotImplemented
+
+    @abstractmethod
+    def modify_derivative_order(
+        self, account_no: str, order_id: str,
+        side: str, instrument: str, quantity: int, price: float
+    ) -> dict:
+        return NotImplemented
+
+    @abstractmethod
+    def cancel_derivative_order(
+        self, account_no: str, order_id: str, instrument: str, side: str
     ) -> dict:
         return NotImplemented

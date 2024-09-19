@@ -66,6 +66,21 @@ print(broker.api.place_derivative_order(
     account_no="6666668", side="BUY", instrument="VN30F2409", quantity=1, price=1000)
 )
 
+# Modify Order
+print(broker.api.modify_equity_order(
+    account_no="6666661", order_id="123456", side="BUY", instrument="SSI", quantity=100, price=31)
+)
+print(broker.api.modify_derivative_order(
+    account_no="6666668", order_id="123456", side="BUY", instrument="VN30F2409", quantity=1, price=1000)
+)
+
+# Cancel Order
+print(broker.api.cancel_equity_order(
+    account_no="6666661", order_id="123456", side="BUY", instrument="SSI")
+)
+print(broker.api.cancel_derivative_order(
+    account_no="6666668", order_id="123456", side="BUY", instrument="VN30F2409")
+)
 ```
 
 ### Streaming order
