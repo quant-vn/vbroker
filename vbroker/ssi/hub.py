@@ -12,10 +12,6 @@ class SSIBrokerHUB(IBrokerHUB):
         super().__init__(api)
         self.url: str = HUB_URL.replace("wss", "https")
         self.url_hub: str = HUB_URL
-        self.headers: dict = {
-            "Authorization": self.api.get_token(),
-        }
-        self.stream_url = self.generate_socket_url()
         self.message_send_to_socket: dict = {
             "H": HUB,
             "M": "SwitchChannels",
@@ -30,7 +26,7 @@ class SSIBrokerHUB(IBrokerHUB):
         """
         self.connection_data: dict = {
             "connectionData": '[{"name": "' + HUB + '"}]',
-            "clientProtocol": '1.5'
+            "clientProtocol": '1.3'
         }
         print(self.connection_data)
         self.negotiate_query = urlencode(self.connection_data)
@@ -53,8 +49,13 @@ class SSIBrokerHUB(IBrokerHUB):
             on_message: The callback function to handle incoming messages.
         """
         try:
+            self.headers: dict = {
+                "Authorization": self.api.get_token(),
+            }
             socket = SocketListener()
-            async with socket.connect_socket_server(self.stream_url, self.headers) as websocket:
+            async with socket.connect_socket_server(
+                self.generate_socket_url(), self.headers
+            ) as websocket:
                 async for msg in websocket:
                     try:
                         msg = json.loads(msg)
@@ -64,6 +65,27 @@ class SSIBrokerHUB(IBrokerHUB):
                             if "A" not in i or not len(i["A"]):
                                 continue
                             msg = json.loads(i["A"][0])
+                            if not msg.get("data"):
+                                continue
+                            if msg.get("data").get("orderStatus"):
+                                status = msg.get("data").get("orderStatus")
+                            else:
+                                status = "ER"
+                            msg = {
+                                "requests_id": msg.get("data").get("origRequestID"),
+                                "order_id": msg.get("data").get("orderID"),
+                                "instrument": msg.get("data").get("instrumentID"),
+                                "quantity": msg.get("data").get("quantity"),
+                                "filled_quantity": msg.get("data").get("filledQty", 0),
+                                "os_quantity": msg.get("data").get("osQty", 0),
+                                "cancelled_quantity": msg.get("data").get("cancelQty", 0),
+                                "price": msg.get("data").get("price", 0),
+                                "avg_price": msg.get("data").get("avgPrice", 0),
+                                "status": status,
+                                "side": "BUY" if msg.get("data").get("buySell") == "B" else "SELL",
+                                "account_no": msg.get("data").get("account"),
+                                "message": msg.get("data").get("message")
+                            }
                             on_message(msg)
                     except Exception as e:
                         print(f" Connection error: {e}")
