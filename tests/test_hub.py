@@ -7,12 +7,10 @@ broker = Broker(
         ssi_broker_account="666666",
         ssi_broker_id="",
         ssi_broker_secret="",
-        ssi_broker_private_key=""  # noqa
+        ssi_broker_private_key=""
     )
 )
 
-broker.api.otp = "123456"
-print(broker.api.get_token())
 
 def on_message(msg):
     print(f"MESSAGE: {msg}")

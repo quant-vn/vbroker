@@ -25,14 +25,6 @@ class IBrokerAPI(ABC):
         return NotImplemented
 
     @abstractmethod
-    def get_order_history(self) -> dict:
-        return NotImplemented
-
-    @abstractmethod
-    def get_orderbook(self) -> dict:
-        return NotImplemented
-
-    @abstractmethod
     def get_max_buy_quantity(self, account_no: str, instrument: str, price: float) -> dict:
         return NotImplemented
 
@@ -40,58 +32,34 @@ class IBrokerAPI(ABC):
     def get_max_sell_quantity(self, account_no: str, instrument: str, price: float) -> dict:
         return NotImplemented
 
-    # EQUITY
     @abstractmethod
-    def get_equity_positions(self, account_no: str) -> dict:
+    def get_ordebbook(self, account_no: str, from_date: str, to_date: str) -> dict:
         return NotImplemented
 
     @abstractmethod
-    def get_equity_account_balance(self, account_no: str) -> dict:
+    def get_positions(self, account_no: str, is_equity: bool = True) -> dict:
         return NotImplemented
 
     @abstractmethod
-    def place_equity_order(
-        self, account_no: str, side: str, instrument: str, quantity: int, price: float
+    def get_balance(self, account_no: str, is_equity: bool = True) -> dict:
+        return NotImplemented
+
+    @abstractmethod
+    def place_order(
+        self, account_no: str, side: str, instrument: str,
+        quantity: int, price: float | str, is_equity: bool = True
     ) -> dict:
         return NotImplemented
 
     @abstractmethod
-    def modify_equity_order(
+    def modify_order(
         self, account_no: str, order_id: str,
-        side: str, instrument: str, quantity: int, price: float
+        side: str, instrument: str, quantity: int, price: float | str, is_equity: bool = True
     ) -> dict:
         return NotImplemented
 
     @abstractmethod
-    def cancel_equity_order(
-        self, account_no: str, order_id: str, nstrument: str, side: str
-    ) -> dict:
-        return NotImplemented
-
-    # DERIVATIVES
-    @abstractmethod
-    def get_derivative_positions(self, account_no: str) -> dict:
-        return NotImplemented
-
-    @abstractmethod
-    def get_derivative_account_balance(self, account_no: str) -> dict:
-        return NotImplemented
-
-    @abstractmethod
-    def place_derivative_order(
-        self, account_no: str, side: str, instrument: str, quantity: int, price: float
-    ) -> dict:
-        return NotImplemented
-
-    @abstractmethod
-    def modify_derivative_order(
-        self, account_no: str, order_id: str,
-        side: str, instrument: str, quantity: int, price: float
-    ) -> dict:
-        return NotImplemented
-
-    @abstractmethod
-    def cancel_derivative_order(
-        self, account_no: str, order_id: str, instrument: str, side: str
+    def cancel_order(
+        self, account_no: str, order_id: str, instrument: str, side: str, is_equity: bool = True
     ) -> dict:
         return NotImplemented

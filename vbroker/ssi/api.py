@@ -1,5 +1,7 @@
 import json
+import os.path
 from datetime import datetime
+from nanoid import generate
 
 from .constant import (
     API_URL,
@@ -23,9 +25,15 @@ from .constant import (
     ENDPOINT_MAX_BUY_QUANTITY,
     ENDPOINT_MAX_SELL_QUANTITY
 )
+from .model import (
+    OrderInfo,
+    SSIPlaceOrderRequestModel,
+    SSIModifyOrderRequestModel,
+    SSICancelOrderRequestModel
+)
 
 from ..interface_broker_api import IBrokerAPI
-from ..utils import jwt_handler, request_handler, sign
+from ..utils import jwt_handler, request_handler, sign, split_date_range
 
 
 class SSIBrokerAPI(IBrokerAPI):
@@ -53,6 +61,11 @@ class SSIBrokerAPI(IBrokerAPI):
         self.url_orderbook: str = "/".join([API_URL, ENDPOINT_ORDERBOOK])
         self.url_max_buy_quantity: str = "/".join([API_URL, ENDPOINT_MAX_BUY_QUANTITY])
         self.url_max_sell_quantity: str = "/".join([API_URL, ENDPOINT_MAX_SELL_QUANTITY])
+        self.__equity_market_id: str = "VN"
+        self.__derivative_market_id: str = "VNFE"
+        self.__session_file: str = "vbroker.session"
+        self.__number: str = "0123456789"
+        self.__device_id: str = ":".join([str(i) for i in range(11, 17)])
         self.__headers: dict = {
             "Content-Type": "application/json",
             "Accept": "application/json"
@@ -82,7 +95,12 @@ class SSIBrokerAPI(IBrokerAPI):
         Returns:
             str: The access token.
         """
+        if os.path.exists(self.__session_file):
+            with open(self.__session_file, "r") as file:
+                self.__token = file.read().strip()
+
         if jwt_handler.is_expired(bearer_token=self.__token):
+            print("a")
             data: dict = {}
             data.update(
                 consumerID=self.config.ssi_broker_id,
@@ -96,12 +114,18 @@ class SSIBrokerAPI(IBrokerAPI):
             )
             if res.get("status") == 200:
                 access_token = " ".join(["Bearer", res.get("data").get("accessToken")])
+                print(access_token)
+                with open(self.__session_file, "w") as file:
+                    file.write(access_token)
             else:
                 access_token = None
+                print(f"[vBroker] Failed to get access token.: {res}")
             self.__token = access_token
         return self.__token
 
-    def get_order_history(self, account_no: str, from_date: str, to_date: str) -> dict:
+    def __get_orderbook_history(
+        self, account_no: str, from_date: str, to_date: str, wait: int = 1
+    ) -> dict:
         """
         Retrieves the order history for a given account within a specified date range.
         Args:
@@ -123,11 +147,15 @@ class SSIBrokerAPI(IBrokerAPI):
             endDate=to_date
         )
         res = request_handler.get(
-            url=self.url_order_history, headers=self.__headers, params=data, limit=self.wait
+            url=self.url_order_history, headers=self.__headers, params=data, limit=wait
         )
-        return res
+        if res.get("status") == 200:
+            return res.get("data").get("orderHistories")
+        else:
+            print(f"[vBroker] {res}")
+            return []
 
-    def get_orderbook(self, account_no: str) -> dict:
+    def __get_orderbook(self, account_no: str) -> dict:
         """
         Retrieves the orderbook for a specific account.
         Args:
@@ -145,7 +173,11 @@ class SSIBrokerAPI(IBrokerAPI):
         res = request_handler.get(
             url=self.url_orderbook, headers=self.__headers, params=data, limit=self.wait
         )
-        return res
+        if res.get("status") == 200:
+            return res.get("data").get("order")
+        else:
+            print(f"[vBroker] {res}")
+            return []
 
     def get_max_buy_quantity(self, account_no: str, instrument: str, price: float) -> dict:
         """
@@ -192,7 +224,7 @@ class SSIBrokerAPI(IBrokerAPI):
         return res
 
     # EQUITY
-    def get_equity_positions(self, account_no: str) -> dict:
+    def __get_equity_positions(self, account_no: str) -> dict:
         """
         Retrieves the equity positions for a given account.
         Args:
@@ -212,7 +244,7 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def get_equity_account_balance(self, account_no: str) -> dict:
+    def __get_equity_account_balance(self, account_no: str) -> dict:
         """
         Retrieves the equity account balance for a given account.
         Args:
@@ -233,30 +265,21 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def place_equity_order(
-        self, account_no: str, side: str, instrument: str, quantity: int, price: float
+    def __place_equity_order(
+        self,
+        account_no: str, side: str, instrument: str, quantity: int, price: float, order_type: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSIPlaceOrderRequestModel(
             account=account_no,
-            requestID="25",
+            requestID=generate(alphabet=self.__number, size=8),
             instrumentID=instrument,
-            market="VN",
-            buySell='B' if side == 'BUY' else 'S',
-            orderType="LO",
-            price=3300,
+            market=self.__equity_market_id,
+            buySell=side,
+            orderType=order_type,
+            price=price,
             quantity=quantity,
-            stopOrder=False,
-            stopPrice=0.0,
-            stopType='',
-            stopStep=0.0,
-            lossStep=0.0,
-            profitStep=0.0,
-            channelID='TA',
-            code='',
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=''
-        )
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -267,25 +290,22 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def modify_equity_order(
+    def __modify_equity_order(
         self, account_no: str, order_id: str,
-        side: str, instrument: str, quantity: int, price: float
+        side: str, instrument: str, quantity: int, price: float, order_type: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSIModifyOrderRequestModel(
             account=account_no,
-            requestID="MODIFY1",
+            requestID=generate(alphabet=self.__number, size=8),
             orderID=order_id,
-            marketID="VN",
+            marketID=self.__equity_market_id,
             instrumentID=instrument,
-            price=300,
+            buySell=side,
+            orderType=order_type,
+            price=price,
             quantity=quantity,
-            buySell='B' if side == 'BUY' else 'S',
-            orderType="LO",
-            code="",
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=""
-        )
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -296,21 +316,18 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def cancel_equity_order(
+    def __cancel_equity_order(
         self, account_no: str, order_id: str, instrument: str, side: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSICancelOrderRequestModel(
             account=account_no,
-            requestID="CANCEL1",
+            requestID=generate(alphabet=self.__number, size=8),
             orderID=order_id,
-            marketID="VN",
+            marketID=self.__equity_market_id,
             instrumentID=instrument,
-            buySell='B' if side == 'BUY' else 'S',
-            code="",
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=""
-        )
+            buySell=side,
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -322,7 +339,7 @@ class SSIBrokerAPI(IBrokerAPI):
         return res
 
     # DERIVATIVES
-    def get_derivative_positions(self, account_no: str) -> dict:
+    def __get_derivative_positions(self, account_no: str) -> dict:
         """
         Retrieves the derivative positions for a given account.
         Args:
@@ -343,7 +360,7 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def get_derivative_account_balance(self, account_no: str) -> dict:
+    def __get_derivative_account_balance(self, account_no: str) -> dict:
         """
         Retrieves the derivative account balance for a given account.
         Args:
@@ -365,30 +382,21 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def place_derivative_order(
-        self, account_no: str, side: str, instrument: str, quantity: int, price: float
+    def __place_derivative_order(
+        self,
+        account_no: str, side: str, instrument: str, quantity: int, price: float, order_type: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSIPlaceOrderRequestModel(
             account=account_no,
-            requestID="26",
+            requestID=generate(alphabet=self.__number, size=8),
             instrumentID=instrument,
-            market="VNFE",
-            buySell='B' if side == 'BUY' else 'S',
-            orderType="MTL",
-            price=0,
+            market=self.__derivative_market_id,
+            buySell=side,
+            orderType=order_type,
+            price=price,
             quantity=quantity,
-            stopOrder=False,
-            stopPrice=0.0,
-            stopType='',
-            stopStep=0.0,
-            lossStep=0.0,
-            profitStep=0.0,
-            channelID='TA',
-            code='',
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=''
-        )
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -399,25 +407,22 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def modify_derivative_order(
+    def __modify_derivative_order(
         self, account_no: str, order_id: str,
-        side: str, instrument: str, quantity: int, price: float
+        side: str, instrument: str, quantity: int, price: float, order_type: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSIModifyOrderRequestModel(
             account=account_no,
-            requestID="MODIFY2",
+            requestID=generate(alphabet=self.__number, size=8),
             orderID=order_id,
-            marketID="VNFE",
+            marketID=self.__derivative_market_id,
             instrumentID=instrument,
-            price=0,
+            buySell=side,
+            orderType=order_type,
+            price=price,
             quantity=quantity,
-            buySell='B' if side == 'BUY' else 'S',
-            orderType="MTL",
-            code="",
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=""
-        )
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -428,21 +433,18 @@ class SSIBrokerAPI(IBrokerAPI):
         )
         return res
 
-    def cancel_derivative_order(
+    def __cancel_derivative_order(
         self, account_no: str, order_id: str, instrument: str, side: str
     ) -> dict:
-        data: dict = {}
-        data.update(
+        data = SSICancelOrderRequestModel(
             account=account_no,
-            requestID="CANCEL2",
+            requestID=generate(alphabet=self.__number, size=8),
             orderID=order_id,
-            marketID="VNFE",
+            marketID=self.__derivative_market_id,
             instrumentID=instrument,
-            buySell='B' if side == 'BUY' else 'S',
-            code="",
-            deviceId=":".join([str(i) for i in range(11, 17)]),
-            userAgent=""
-        )
+            buySell=side,
+            deviceId=self.__device_id
+        ).model_dump()
         data_signed = sign(json.dumps(data), self.config.ssi_broker_private_key)
         self.__headers.update({
             "Authorization": self.get_token(),
@@ -452,3 +454,108 @@ class SSIBrokerAPI(IBrokerAPI):
             url=self.url_derivative_cancel_order, headers=self.__headers, data=data, limit=self.wait
         )
         return res
+
+    def get_ordebbook(self, account_no: str, from_date: str = None, to_date: str = None) -> dict:
+        if all([
+            from_date is None,
+            to_date is None
+        ]):
+            from_date = to_date = datetime.now().strftime("%Y-%m-%d")
+        _orderbook: list = []
+        _split_date_range = split_date_range(from_date, to_date) or [(from_date, to_date)]
+        for _f_date, _t_date in _split_date_range:
+            _order = self.__get_orderbook_history(account_no, _f_date, _t_date, wait=10)
+            if _order:
+                _orderbook += _order
+        return [OrderInfo(**i) for i in _orderbook]
+
+    def get_positions(self, account_no: str, is_equity: bool = True) -> dict:
+        if is_equity:
+            return self.__get_equity_positions(account_no)
+        else:
+            return self.__get_derivative_positions(account_no)
+
+    def get_balance(self, account_no: str, is_equity: bool = True) -> dict:
+        if is_equity:
+            return self.__get_equity_account_balance(account_no)
+        else:
+            return self.__get_derivative_account_balance(account_no)
+
+    def place_order(
+        self, account_no: str, side: str, instrument: str,
+        quantity: int, price: float | str, is_equity: bool = True
+    ) -> dict:
+        if isinstance(price, str):
+            order_type = price
+            price = 0
+        else:
+            order_type = "LO"
+        side = "B" if side == "BUY" else "S"
+        if is_equity:
+            return self.__place_equity_order(
+                account_no=account_no,
+                side=side,
+                instrument=instrument,
+                quantity=quantity,
+                price=price,
+                order_type=order_type
+            )
+        else:
+            return self.__place_derivative_order(
+                account_no=account_no,
+                side=side,
+                instrument=instrument,
+                quantity=quantity,
+                price=price,
+                order_type=order_type
+            )
+
+    def modify_order(
+        self, account_no: str, order_id: str, side: str, instrument: str,
+        quantity: int, price: float | str, is_equity: bool = True
+    ) -> dict:
+        if isinstance(price, str):
+            order_type = price
+            price = 0
+        else:
+            order_type = "LO"
+        side = "B" if side == "BUY" else "S"
+        if is_equity:
+            return self.__modify_equity_order(
+                account_no=account_no,
+                order_id=order_id,
+                side=side,
+                instrument=instrument,
+                quantity=quantity,
+                price=price,
+                order_type=order_type
+            )
+        else:
+            return self.__modify_derivative_order(
+                account_no=account_no,
+                order_id=order_id,
+                side=side,
+                instrument=instrument,
+                quantity=quantity,
+                price=price,
+                order_type=order_type
+            )
+
+    def cancel_order(
+        self, account_no: str, order_id: str, instrument: str, side: str, is_equity: bool = True
+    ) -> dict:
+        side = "B" if side == "BUY" else "S"
+        if is_equity:
+            return self.__cancel_equity_order(
+                account_no=account_no,
+                order_id=order_id,
+                instrument=instrument,
+                side=side
+            )
+        else:
+            return self.__cancel_derivative_order(
+                account_no=account_no,
+                order_id=order_id,
+                instrument=instrument,
+                side=side
+            )

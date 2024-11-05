@@ -88,6 +88,6 @@ class SSIBrokerHUB(IBrokerHUB):
                             }
                             on_message(msg)
                     except Exception as e:
-                        print(f" Connection error: {e}")
+                        print(f"[vBroker] Connection error: {e}")
         except Exception as e:
-            print(f" Connection error: {e}")
+            print(f"[vBroker] Connection error: {e}")
