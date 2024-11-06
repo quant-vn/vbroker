@@ -1,6 +1,8 @@
 """ Interface for Broker API """
+from typing import List
 from abc import ABC, abstractmethod
 from .config import Config
+from .model import vBrokerOrder
 
 
 class IBrokerAPI(ABC):
@@ -33,7 +35,7 @@ class IBrokerAPI(ABC):
         return NotImplemented
 
     @abstractmethod
-    def get_ordebbook(self, account_no: str, from_date: str, to_date: str) -> dict:
+    def get_ordebbook(self, account_no: str, from_date: str, to_date: str) -> List[vBrokerOrder]:
         return NotImplemented
 
     @abstractmethod

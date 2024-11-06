@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from .constant import HUB_URL, HUB
 from ..interface_broker_hub import IBrokerHUB
 from ..utils import SocketListener, request_handler
+from ..model import vBrokerOrder
 
 
 class SSIBrokerHUB(IBrokerHUB):
@@ -71,22 +72,24 @@ class SSIBrokerHUB(IBrokerHUB):
                                 status = msg.get("data").get("orderStatus")
                             else:
                                 status = "ER"
-                            msg = {
-                                "requests_id": msg.get("data").get("origRequestID"),
-                                "order_id": msg.get("data").get("orderID"),
-                                "instrument": msg.get("data").get("instrumentID"),
-                                "quantity": msg.get("data").get("quantity"),
-                                "filled_quantity": msg.get("data").get("filledQty", 0),
-                                "os_quantity": msg.get("data").get("osQty", 0),
-                                "cancelled_quantity": msg.get("data").get("cancelQty", 0),
-                                "price": msg.get("data").get("price", 0),
-                                "avg_price": msg.get("data").get("avgPrice", 0),
-                                "status": status,
-                                "side": "BUY" if msg.get("data").get("buySell") == "B" else "SELL",
-                                "account_no": msg.get("data").get("account"),
-                                "message": msg.get("data").get("message")
-                            }
-                            on_message(msg)
+                            on_message(vBrokerOrder(
+                                account_no=msg.get("data").get("account"),
+                                order_id=msg.get("data").get("orderID"),
+                                unique_id=msg.get("data").get("origRequestID"),
+                                instrument=msg.get("data").get("instrumentID"),
+                                side="BUY" if msg.get("data").get("buySell") == "B" else "SELL",
+                                order_type='',
+                                price=msg.get("data").get("price", 0),
+                                avg_price=msg.get("data").get("avgPrice", 0),
+                                quantity=msg.get("data").get("quantity"),
+                                filled_quantity=msg.get("data").get("filledQty", 0),
+                                os_quantity=msg.get("data").get("osQty", 0),
+                                cancelled_quantity=msg.get("data").get("cancelQty", 0),
+                                status=status,
+                                input_time=msg.get("data").get("inputTime"),
+                                modified_time=msg.get("data").get("modifiedTime"),
+                                message=msg.get("data").get("message")
+                            ))
                     except Exception as e:
                         print(f"[vBroker] Connection error: {e}")
         except Exception as e:

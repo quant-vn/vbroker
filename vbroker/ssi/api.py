@@ -26,12 +26,12 @@ from .constant import (
     ENDPOINT_MAX_SELL_QUANTITY
 )
 from .model import (
-    OrderInfo,
     SSIPlaceOrderRequestModel,
     SSIModifyOrderRequestModel,
     SSICancelOrderRequestModel
 )
 
+from ..model import vBrokerOrder
 from ..interface_broker_api import IBrokerAPI
 from ..utils import jwt_handler, request_handler, sign, split_date_range
 
@@ -100,7 +100,6 @@ class SSIBrokerAPI(IBrokerAPI):
                 self.__token = file.read().strip()
 
         if jwt_handler.is_expired(bearer_token=self.__token):
-            print("a")
             data: dict = {}
             data.update(
                 consumerID=self.config.ssi_broker_id,
@@ -467,7 +466,11 @@ class SSIBrokerAPI(IBrokerAPI):
             _order = self.__get_orderbook_history(account_no, _f_date, _t_date, wait=10)
             if _order:
                 _orderbook += _order
-        return [OrderInfo(**i) for i in _orderbook]
+        return [
+            vBrokerOrder(
+                **i, account_no=account_no, os_quantity=i.get("quantity") - i.get("filledQty")
+            ) for i in _orderbook
+        ]
 
     def get_positions(self, account_no: str, is_equity: bool = True) -> dict:
         if is_equity:
