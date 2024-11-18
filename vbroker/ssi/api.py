@@ -63,7 +63,7 @@ class SSIBrokerAPI(IBrokerAPI):
         self.url_max_sell_quantity: str = "/".join([API_URL, ENDPOINT_MAX_SELL_QUANTITY])
         self.__equity_market_id: str = "VN"
         self.__derivative_market_id: str = "VNFE"
-        self.__session_file: str = "vbroker.session"
+        self.__session_file: str = f"vbroker-ssi-{self.config.ssi_broker_account}.session"
         self.__number: str = "0123456789"
         self.__device_id: str = ":".join([str(i) for i in range(11, 17)])
         self.__headers: dict = {
