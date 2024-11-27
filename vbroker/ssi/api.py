@@ -493,7 +493,7 @@ class SSIBrokerAPI(IBrokerAPI):
             price = 0
         else:
             order_type = "LO"
-        side = "B" if side == "BUY" else "S"
+        side = "B" if side.upper() == "BUY" else "S"
         if is_equity:
             return self.__place_equity_order(
                 account_no=account_no,
@@ -522,7 +522,7 @@ class SSIBrokerAPI(IBrokerAPI):
             price = 0
         else:
             order_type = "LO"
-        side = "B" if side == "BUY" else "S"
+        side = "B" if side.upper() == "BUY" else "S"
         if is_equity:
             return self.__modify_equity_order(
                 account_no=account_no,
@@ -547,7 +547,7 @@ class SSIBrokerAPI(IBrokerAPI):
     def cancel_order(
         self, account_no: str, order_id: str, instrument: str, side: str, is_equity: bool = True
     ) -> dict:
-        side = "B" if side == "BUY" else "S"
+        side = "B" if side.upper() == "BUY" else "S"
         if is_equity:
             return self.__cancel_equity_order(
                 account_no=account_no,
