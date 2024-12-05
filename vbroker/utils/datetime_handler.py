@@ -25,3 +25,14 @@ def split_date_range(start_date, end_date, days_interval=7):
         ))
         current = interval_end + timedelta(days=1)
     return intervals
+
+
+def convert_timestamp_to_datetime(timestamp: int):
+    """
+    Converts a timestamp to a date in 'YYYY-MM-DD' format.
+    Args:
+        timestamp (int): The timestamp to convert.
+    Returns:
+        str: The date in 'YYYY-MM-DD' format.
+    """
+    return datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')

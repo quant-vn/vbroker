@@ -1,11 +1,14 @@
 """ HUB broker for SSI """
 import json
+import asyncio
 from urllib.parse import urlencode
 
 from .constant import HUB_URL, HUB
+from .enum import SSIOrderStatusEnum, SSISideEnum
 from ..interface_broker_hub import IBrokerHUB
-from ..utils import SocketListener, request_handler
+from ..utils import SocketListener, request_handler, convert_timestamp_to_datetime, keepalive
 from ..model import vBrokerOrder
+from ..enum_broker import OrderStatusEnum, SideEnum
 
 
 class SSIBrokerHUB(IBrokerHUB):
@@ -57,6 +60,7 @@ class SSIBrokerHUB(IBrokerHUB):
             async with socket.connect_socket_server(
                 self.generate_socket_url(), self.headers
             ) as websocket:
+                keepalive_task = asyncio.create_task(keepalive(websocket))
                 async for msg in websocket:
                     try:
                         msg = json.loads(msg)
@@ -68,16 +72,20 @@ class SSIBrokerHUB(IBrokerHUB):
                             msg = json.loads(i["A"][0])
                             if not msg.get("data"):
                                 continue
+                            message = msg.get("data").get("message")
                             if msg.get("data").get("orderStatus"):
-                                status = msg.get("data").get("orderStatus")
+                                _raw_status = msg.get("data").get("orderStatus")
+                                status = OrderStatusEnum[SSIOrderStatusEnum[_raw_status].value]
+                                if not message:
+                                    message = _raw_status
                             else:
-                                status = "ER"
+                                status = OrderStatusEnum.REJECTED
                             on_message(vBrokerOrder(
                                 account_no=msg.get("data").get("account"),
                                 order_id=msg.get("data").get("orderID"),
                                 unique_id=msg.get("data").get("origRequestID"),
                                 instrument=msg.get("data").get("instrumentID"),
-                                side="BUY" if msg.get("data").get("buySell") == "B" else "SELL",
+                                side=SideEnum[SSISideEnum[msg.get("data").get("buySell")].value],
                                 order_type='',
                                 price=msg.get("data").get("price", 0),
                                 avg_price=msg.get("data").get("avgPrice", 0),
@@ -86,11 +94,17 @@ class SSIBrokerHUB(IBrokerHUB):
                                 os_quantity=msg.get("data").get("osQty", 0),
                                 cancelled_quantity=msg.get("data").get("cancelQty", 0),
                                 status=status,
-                                input_time=msg.get("data").get("inputTime"),
-                                modified_time=msg.get("data").get("modifiedTime"),
-                                message=msg.get("data").get("message")
+                                input_time=convert_timestamp_to_datetime(
+                                    int(msg.get("data").get("inputTime"))/1000
+                                ),
+                                modified_time=convert_timestamp_to_datetime(
+                                    int(msg.get("data").get("modifiedTime"))/1000
+                                ),
+                                message=message
                             ))
                     except Exception as e:
                         print(f"[vBroker] Connection error: {e}")
+                    finally:
+                        keepalive_task.cancel()
         except Exception as e:
             print(f"[vBroker] Connection error: {e}")

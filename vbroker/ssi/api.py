@@ -30,10 +30,18 @@ from .model import (
     SSIModifyOrderRequestModel,
     SSICancelOrderRequestModel
 )
+from .enum import SSISideEnum, SSIOrderStatusEnum
 
 from ..model import vBrokerOrder
 from ..interface_broker_api import IBrokerAPI
-from ..utils import jwt_handler, request_handler, sign, split_date_range
+from ..utils import (
+    jwt_handler,
+    request_handler,
+    sign,
+    split_date_range,
+    convert_timestamp_to_datetime
+)
+from ..enum_broker import SideEnum, OrderStatusEnum
 
 
 class SSIBrokerAPI(IBrokerAPI):
@@ -468,7 +476,17 @@ class SSIBrokerAPI(IBrokerAPI):
                 _orderbook += _order
         return [
             vBrokerOrder(
-                **i, account_no=account_no, os_quantity=i.get("quantity") - i.get("filledQty")
+                **i,
+                account_no=account_no,
+                side=SideEnum[SSISideEnum[i.get("buySell")].value],
+                status=OrderStatusEnum[SSIOrderStatusEnum[i.get("orderStatus")].value],
+                os_quantity=i.get("quantity") - i.get("filledQty"),
+                input_time=convert_timestamp_to_datetime(
+                    int(i.get("inputTime"))/1000
+                ),
+                modified_time=convert_timestamp_to_datetime(
+                    int(i.get("modifiedTime"))/1000
+                ),
             ) for i in _orderbook
         ]
 
@@ -493,9 +511,9 @@ class SSIBrokerAPI(IBrokerAPI):
             price = 0
         else:
             order_type = "LO"
-        side = "B" if side.upper() == "BUY" else "S"
+        side = SSISideEnum[SideEnum[side.upper()].value].value
         if is_equity:
-            return self.__place_equity_order(
+            res = self.__place_equity_order(
                 account_no=account_no,
                 side=side,
                 instrument=instrument,
@@ -504,7 +522,7 @@ class SSIBrokerAPI(IBrokerAPI):
                 order_type=order_type
             )
         else:
-            return self.__place_derivative_order(
+            res = self.__place_derivative_order(
                 account_no=account_no,
                 side=side,
                 instrument=instrument,
@@ -512,6 +530,26 @@ class SSIBrokerAPI(IBrokerAPI):
                 price=price,
                 order_type=order_type
             )
+        order_info = res.get("data")
+        _unique_id = order_info.get("requestID")
+        return vBrokerOrder(
+            order_id=None,
+            account_no=account_no,
+            side=SideEnum[SSISideEnum[side].value],
+            instrument=instrument,
+            quantity=quantity,
+            filled_quantity=0,
+            os_quantity=quantity,
+            cancelled_quantity=0,
+            price=price,
+            avg_price=0,
+            order_type=order_type,
+            unique_id=_unique_id,
+            input_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            modified_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            status=OrderStatusEnum.PREPARE,
+            message=None
+        )
 
     def modify_order(
         self, account_no: str, order_id: str, side: str, instrument: str,
@@ -522,9 +560,9 @@ class SSIBrokerAPI(IBrokerAPI):
             price = 0
         else:
             order_type = "LO"
-        side = "B" if side.upper() == "BUY" else "S"
+        side = SSISideEnum[SideEnum[side.upper()].value].value
         if is_equity:
-            return self.__modify_equity_order(
+            res = self.__modify_equity_order(
                 account_no=account_no,
                 order_id=order_id,
                 side=side,
@@ -534,7 +572,7 @@ class SSIBrokerAPI(IBrokerAPI):
                 order_type=order_type
             )
         else:
-            return self.__modify_derivative_order(
+            res = self.__modify_derivative_order(
                 account_no=account_no,
                 order_id=order_id,
                 side=side,
@@ -543,11 +581,31 @@ class SSIBrokerAPI(IBrokerAPI):
                 price=price,
                 order_type=order_type
             )
+        order_info = res.get("data").get("requestData")
+        _unique_id = res.get("data").get("requestID")
+        return vBrokerOrder(
+            order_id=order_info.get("orderID"),
+            account_no=account_no,
+            side=SideEnum[SSISideEnum[side].value],
+            instrument=instrument,
+            quantity=quantity,
+            filled_quantity=0,
+            os_quantity=quantity,
+            cancelled_quantity=0,
+            price=price,
+            avg_price=0,
+            order_type=order_type,
+            unique_id=_unique_id,
+            input_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            modified_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            status=OrderStatusEnum.WAITING,
+            message=None
+        )
 
     def cancel_order(
         self, account_no: str, order_id: str, instrument: str, side: str, is_equity: bool = True
     ) -> dict:
-        side = "B" if side.upper() == "BUY" else "S"
+        side = SSISideEnum[SideEnum[side.upper()].value].value
         if is_equity:
             return self.__cancel_equity_order(
                 account_no=account_no,
