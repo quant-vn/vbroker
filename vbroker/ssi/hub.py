@@ -78,8 +78,10 @@ class SSIBrokerHUB(IBrokerHUB):
                                 status = OrderStatusEnum[SSIOrderStatusEnum[_raw_status].value]
                                 if not message:
                                     message = _raw_status
+                                cancelled_quantity = msg.get("data").get("cancelQty", 0)
                             else:
                                 status = OrderStatusEnum.REJECTED
+                                cancelled_quantity = msg.get("data").get("quantity")
                             on_message(vBrokerOrder(
                                 account_no=msg.get("data").get("account"),
                                 order_id=msg.get("data").get("orderID"),
@@ -92,7 +94,7 @@ class SSIBrokerHUB(IBrokerHUB):
                                 quantity=msg.get("data").get("quantity"),
                                 filled_quantity=msg.get("data").get("filledQty", 0),
                                 os_quantity=msg.get("data").get("osQty", 0),
-                                cancelled_quantity=msg.get("data").get("cancelQty", 0),
+                                cancelled_quantity=cancelled_quantity,
                                 status=status,
                                 input_time=convert_timestamp_to_datetime(
                                     int(msg.get("data").get("inputTime"))/1000
